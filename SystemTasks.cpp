@@ -3,7 +3,6 @@
 #include "HalEncoders.h"
 #include "HalTactile.h"
 #include "HalTWAI.h"
-#include "Calibration.h"
 #include "esp_task_wdt.h" // 引入看门狗
 
 // 任务句柄 (全局)
@@ -12,9 +11,6 @@ TaskHandle_t xTacTask = NULL;
 TaskHandle_t xCanTask = NULL;  // 【修复】添加 CAN 任务句柄
 TaskHandle_t xSysMgrTask = NULL; // [新增] 管理任务句柄
 
-// 全局实例
-// HalEncoders& encoders = HalEncoders::getInstance();
-CalibrationManager calibrationManager;
 
     static int times_test;
 
@@ -211,8 +207,6 @@ void Task_SysMgr(void *pvParameters) {
         // 3. 喂系统级看门狗 (如果开启了 IDLE 监控，这一步其实主要是为了防止 Flash 操作过长)
         esp_task_wdt_reset();
 
-        // 4. 执行 NVS 写入 (耗时操作)
-        calibManager.saveCurrentAsZero(currentData.rawAngles);
         
         // 5. 再次喂狗
         esp_task_wdt_reset();

@@ -4,7 +4,6 @@
 #include "HalTactile.h"
 #include "HalTWAI.h"
 #include "SystemTasks.h"
-#include "Calibration.h"
 #include "esp_task_wdt.h"
 #include "esp_log.h" // 引入日志头文件
 
@@ -52,9 +51,6 @@ void setup() {
         Serial.println("[Init] TWAI CAN... FAILED");
     }
 
-    // 4. 校准管理器
-    calibManager.begin();
-    Serial.println("[Init] Calibration Manager... OK");
 
     // --------------------------------------------------------
     // [RTOS 任务启动]
