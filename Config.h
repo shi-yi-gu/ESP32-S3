@@ -57,25 +57,6 @@ struct CheckData {
     uint16_t connectionStatus[ENCODER_TOTAL_NUM]; // 0: OK, 0xFFFF: Lost
 };
 
-// // 编码器数据结构
-// struct EncoderData
-// {
-//     uint16_t rawAngles[ENCODER_TOTAL_NUM];
-//     uint16_t finalAngles[ENCODER_TOTAL_NUM];            // 实际角度值 (0-360度)
-//     uint16_t errorFlags[ENCODER_TOTAL_NUM];       // 错误标志
-//     bool  parityCheckFlags[ENCODER_TOTAL_NUM]; // 偶校验标志
-// };
-
-// // 编码器检查数据结构
-// struct CheckData
-// {
-//     uint16_t rawData[ENCODER_TOTAL_NUM];         // 角度值 (0-16383)
-//     bool magHigh[ENCODER_TOTAL_NUM]; // 磁场过强标志。<br>1 = 磁铁距离芯片太近或磁性太强。<br>建议增大安装空隙。
-//     bool magLow[ENCODER_TOTAL_NUM];  // 磁场过弱标志。<br>1 = 磁铁距离芯片太远或磁性太弱。<br>建议减小安装空隙。
-//     bool cof[ENCODER_TOTAL_NUM];     // CORDIC 溢出。<br>1 = 内部计算溢出，通常伴随磁场异常，此时角度数据不可信。
-//     uint8_t agc[ENCODER_TOTAL_NUM];      // 自动增益值 (0~255) 。<br>反映芯片为了补偿磁场强度而调节的信号增益：<br>- 0: 磁场极强（增益最小）。<br>- 255: 磁场极弱（增益最大）。<br>- 理想值: 约 128 (通常在 50~200 之间为佳)。
-// };
-
 
 // --- 触觉传感器数据结构 (根据你的描述修改) ---
 

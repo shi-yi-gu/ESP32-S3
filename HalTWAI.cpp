@@ -42,24 +42,6 @@ void HalTWAI::sendFrame(uint32_t id, const uint8_t* data, uint8_t len) {
 
     twai_transmit(&message, 0);
 }
-//小端序发送逻辑，不符合工业标准，但符合我们自己的解析逻辑，且效率更高
-// void HalTWAI::sendEncoderData(const EncoderData& encData) {
-//     uint8_t buffer[8];
-//     int idx = 0;
-//     // static int times;
-//     // 发送 21 个 uint16_t 角度值 (分 6 帧)
-//     for (int i = 0; i < 5; i++) {
-//         memcpy(buffer, &encData.rawAngles[idx], 8);
-//         sendFrame(0x100 + i, buffer, 8);
-//         idx += 4;
-//         // Serial.printf("第%d次can发送执行完毕\n",times);
-//         // times++;
-//     }
-//     // 最后一帧 (1 个角度)
-//     memset(buffer, 0, 8);
-//     memcpy(buffer, &encData.rawAngles[idx], 2);
-//     sendFrame(0x105, buffer, 8);
-// }
 
 void HalTWAI::sendEncoderData(const EncoderData& encData) {
     uint8_t buffer[8];

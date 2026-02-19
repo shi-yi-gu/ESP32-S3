@@ -58,16 +58,6 @@ void Task_Encoders(void* pvParameters) {
     if (ENCODER_TOTAL_NUM % 5 != 0) Serial.println();
         }
 
-        // // 2. 处理归零请求
-        // if (g_requestZeroCalibration) {
-        //     calibManager.saveCurrentAsZero(localData.rawAngles);
-        //     g_requestZeroCalibration = false;
-        //     Serial.println("[Task_Encoders] Zero calibration done.");
-        // }
-
-        // 3. 校准(校钩子，不校了，直接用原始值)
-        // calibManager.calibrateAll(localData.rawAngles, localData.finalAngles);
-
         // 4. 填充rawlAngles
         for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
             if (localData.errorFlags[i]) {
@@ -98,74 +88,6 @@ void Task_Encoders(void* pvParameters) {
     }
 }
 
-// void Task_Encoders(void *pvParameters) {
-//     (void)pvParameters;
-//     static int times_test;
-//     encoders.begin();
-//     calibrationManager.begin();
-    
-//     EncoderData localData;
-//     uint16_t calibrated[ENCODER_TOTAL_NUM];
-    
-//     TickType_t xLastWakeTime = xTaskGetTickCount();
-//     const TickType_t xFrequency = pdMS_TO_TICKS(5);
-
-//     for (;;) {
-//         // 1. 获取数据 (包含自动错误检测与恢复)
-//         encoders.getData(localData);
-
-//     //     //打印测试结果
-//     //     if (times_test%100==0)
-//     //     {
-//     // Serial.println(">>> Encoders (Final Angle: 0~16383)");
-//     // for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
-//     //     // [ID:数据] 格式优化
-//     //     Serial.printf("[%02d:%05d] ", i, localData.rawAngles[i]);
-//     //     // 每 5 个换行
-//     //     if ((i + 1) % 5 == 0) Serial.println();
-//     // }
-//     // if (ENCODER_TOTAL_NUM % 5 != 0) Serial.println();
-//     //     }
-
-//         // 2. 处理归零请求
-//         if (g_requestZeroCalibration) {
-//             calibrationManager.saveCurrentAsZero(localData.rawAngles);
-//             g_requestZeroCalibration = false;
-//         }
-
-//         // 3. 校准
-//         calibrationManager.calibrateAll(localData.rawAngles, calibrated);
-
-//         // 4. 填充finalAngles
-//         for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
-//             if (localData.errorFlags[i]) {
-//                 localData.finalAngles[i] = 0xFFFF;  // 错误标记
-//             } else {
-//                 localData.finalAngles[i] = calibrated[i];
-//                 // Serial.println("\n======= [填充任务执行中] =======");
-//             }
-//         }
-
-//         // 5. 发送到队列
-//         if (xQueueEncoderData) {
-//             xQueueOverwrite(xQueueEncoderData, &localData);
-//             Serial.println("\n======= [队列填充任务执行中] =======");
-//         }
-//         // Serial.println("\n======= [编码器任务执行中] =======");
-
-//         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-//     }
-// }
-// void Task_Encoders(void* pvParameters) {
-//     const TickType_t xFrequency = pdMS_TO_TICKS(3);
-//     TickType_t xLastWakeTime = xTaskGetTickCount();
-
-//     for (;;) {
-//         encoders.readAll();
-//         calibManager.calibrateAll(encoders.getData().rawAngles, encoders.getData().finalAngles);
-//         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-//     }
-// }
 
 // --- 触觉任务 (50Hz) ---
 void Task_Tactile(void* pvParameters) {
@@ -257,44 +179,6 @@ void Task_CanBus(void *pvParameters) {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
-// // --- CAN 通信任务 (100Hz) ---
-// void Task_CanBus(void* pvParameters) {
-//     const TickType_t xFrequency = pdMS_TO_TICKS(10);
-//     TickType_t xLastWakeTime = xTaskGetTickCount();
-
-//     RemoteCommand rxCmd;
-
-//     for (;;) {
-//         // 【关键修复】使用 static 避免栈溢出
-//         static EncoderData enc;
-//         static TactileData tac;
-
-//         // static int times;
-//         // 【新增】1. 维护总线状态 (自恢复、报警)
-//         bool isBusOk = twaiBus.maintain();
-
-//          if (isBusOk) {
-//         enc = encoders.getData();
-//         tac = tactile.getData();
-
-//         twaiBus.sendEncoderData(enc);
-//         // twaiBus.sendTactileSummary(tac);
-
-//         // Serial.printf("第%d次can发送执行完毕\n",times);
-//         while (twaiBus.receiveMonitor(&rxCmd)) {
-//             // 处理指令
-//         }
-                    
-        // } else {
-        // // >>> 总线故障中 <<<
-        // // 可以选择在这里闪烁 LED 指示故障
-        //     vTaskDelay(pdMS_TO_TICKS(50)); // 故障时降低频率，给驱动恢复时间
-        // }
-//         // times++;
-//         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-//     }
-// }
-
 // --- [新增] 系统管理任务函数 ---
 // 负责处理低频、耗时、全局性的操作（如校准、保存配置等）
 // --- [修正后] 系统管理任务函数 ---
