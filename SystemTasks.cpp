@@ -8,60 +8,65 @@
 // 任务句柄 (全局)
 TaskHandle_t xEncTask = NULL;
 TaskHandle_t xTacTask = NULL;
-TaskHandle_t xCanTask = NULL;  // 【修复】添加 CAN 任务句柄
-TaskHandle_t xSysMgrTask = NULL; // [新增] 管理任务句柄
-
-
-    static int times_test;
+TaskHandle_t xCanTask = NULL;
+TaskHandle_t xSysMgrTask = NULL;
 
 // 队列
 QueueHandle_t xQueueEncoderData = NULL;
 
+// 测试计数器
+static int g_testCounter = 0;
+
 // 控制标志
 volatile bool g_requestZeroCalibration = false;
 
-// --- 编码器任务 (200Hz) ---
+/**
+ * 编码器任务 (200Hz)
+ * 负责读取编码器原始数据并发送到队列
+ */
 void Task_Encoders(void* pvParameters) {
     const TickType_t xFrequency = pdMS_TO_TICKS(5); // 200Hz
     TickType_t xLastWakeTime = xTaskGetTickCount();
     
-    // 本地数据缓冲 (使用 EncoderData，不是 EncoderDataPacket)
+    // 本地数据缓冲
     EncoderData localData;
-    // uint16_t calibrated[ENCODER_TOTAL_NUM];
 
     Serial.println("[Task_Encoders] Started!");
 
     for (;;) {
         // 1. 读取编码器原始数据
         EncoderData rawData = encoders.getData();
-        // encoders.getData(localData);
+        
         // 复制原始数据到本地结构
         for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
             localData.rawAngles[i] = rawData.rawAngles[i];
             localData.errorFlags[i] = rawData.errorFlags[i];
         }
 
-        //打印测试结果
-        if ((times_test%100)==1)
-        {
-    Serial.println(">>> Encoders (raw Angle: 0~16383)");
-    for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
-        // [ID:数据] 格式优化
-        Serial.printf("[%02d:%05d] ", i, localData.rawAngles[i]);
-        // 每 5 个换行
-        if ((i + 1) % 5 == 0) Serial.println();
-    }
-    if (ENCODER_TOTAL_NUM % 5 != 0) Serial.println();
+        // 打印测试结果 (每100次循环打印一次)
+        if ((g_testCounter % 100) == 1) {
+            Serial.println(">>> Encoders (raw Angle: 0~16383)");
+            for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
+                // [ID:数据] 格式优化
+                Serial.printf("[%02d:%05d] ", i, localData.rawAngles[i]);
+                // 每 5 个换行
+                if ((i + 1) % 5 == 0) {
+                    Serial.println();
+                }
+            }
+            if (ENCODER_TOTAL_NUM % 5 != 0) {
+                Serial.println();
+            }
         }
 
-        // 4. 填充rawlAngles
+        // 2. 处理错误标记
         for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
             if (localData.errorFlags[i]) {
                 localData.rawAngles[i] = 0xFFFF;  // 错误标记
             }
         }
 
-        // 5. 发送到队列 【关键修复点】
+        // 3. 发送到队列
         if (xQueueEncoderData != NULL) {
             xQueueOverwrite(xQueueEncoderData, &localData);
             
@@ -79,16 +84,21 @@ void Task_Encoders(void* pvParameters) {
                 lastErr = millis();
             }
         }
-        times_test++;
+        
+        g_testCounter++;
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
 
-
-// --- 触觉任务 (50Hz) ---
+/**
+ * 触觉任务 (10Hz)
+ * 负责处理触觉传感器数据
+ */
 void Task_Tactile(void* pvParameters) {
     const TickType_t xFrequency = pdMS_TO_TICKS(100);
     TickType_t xLastWakeTime = xTaskGetTickCount();
+
+    Serial.println("[Task_Tactile] Started!");
 
     for (;;) {
         // tactile.update();
@@ -96,93 +106,79 @@ void Task_Tactile(void* pvParameters) {
     }
 }
 
-// --- CAN 通信任务 (100Hz) ---
+/**
+ * CAN 通信任务 (100Hz)
+ * 负责发送编码器数据和接收远程命令
+ */
 void Task_CanBus(void *pvParameters) {
     (void)pvParameters;
     
-    // twaiBus.begin();
-    
     EncoderData txData;
-    RemoteCommand cmd{};
     static uint8_t errorSendCounter = 0;
     
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(10);
 
-    for (;;) {
+    Serial.println("[Task_CanBus] Started!");
 
-        // 【新增】1. 维护总线状态 (自恢复、报警)
+    for (;;) {
+        // 1. 维护总线状态 (自恢复、报警)
         bool isBusOk = twaiBus.maintain();
 
-         if (isBusOk) {
-        // Serial.println("\n======= [发送任务执行中] =======");
-        // 1. 从队列获取最新数据
-        if (xQueueEncoderData && xQueueReceive(xQueueEncoderData, &txData, 0) == pdTRUE) {
-            
-            // 2. 发送角度数据 (使用原有打包方式)
-            twaiBus.sendEncoderData(txData);
-            // Serial.println("\n======= [编码器数据发送完毕] =======");
-
-            // 3. 【新增】每隔5帧检查并发送错误状态
-            errorSendCounter++;
-            if (errorSendCounter >= 5) {
-                errorSendCounter = 0;
+        if (isBusOk) {
+            // 2. 从队列获取最新数据
+            if (xQueueEncoderData && xQueueReceive(xQueueEncoderData, &txData, 0) == pdTRUE) {
                 
-                // 检查是否有错误
-                bool hasError = false;
-                for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
-                    if (txData.errorFlags[i]) {
-                        hasError = true;
-                        break;
+                // 3. 发送角度数据
+                twaiBus.sendEncoderData(txData);
+
+                // 4. 每隔5帧检查并发送错误状态
+                errorSendCounter++;
+                if (errorSendCounter >= 5) {
+                    errorSendCounter = 0;
+                    
+                    // 检查是否有错误
+                    bool hasError = false;
+                    for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
+                        if (txData.errorFlags[i]) {
+                            hasError = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasError) {
+                        twaiBus.sendErrorStatus(txData);
                     }
                 }
-                
-                if (hasError) {
-                    twaiBus.sendErrorStatus(txData);
+            }
 
+            // 5. 接收处理
+            twai_message_t rxMsg;
+            if (twai_receive(&rxMsg, 0) == ESP_OK) {
+                
+                // 收到校准指令 (ID:0x200, Data:0xCA)
+                if (rxMsg.identifier == 0x200 && rxMsg.data_length_code > 0 && rxMsg.data[0] == 0xCA) {
+                    
+                    // 发送通知给 SysMgr 任务
+                    if (xSysMgrTask != NULL) {
+                        xTaskNotifyGive(xSysMgrTask); 
+                    }
                 }
             }
-        }
-
-        // 4. 接收处理
-        twai_message_t rxMsg;
-        if (twai_receive(&rxMsg, 0) == ESP_OK) {
-            
-            // 收到校准指令 (ID:0x200, Data:0xCA)
-            if (rxMsg.identifier == 0x200 && rxMsg.data_length_code > 0 && rxMsg.data[0] == 0xCA) {
-                
-                // [关键修改] 不直接执行，而是发送通知给 SysMgr 任务
-                if (xSysMgrTask != NULL) {
-                    xTaskNotifyGive(xSysMgrTask); 
-                }
-            }
-        }
-        // while (twaiBus.receiveMonitor(&cmd)) {
-        //     // 处理远程命令
-        //     if (rxMsg.identifier == 0x200 && rxMsg.data_length_code >= 1) {
-        //         if (rxMsg.data[0] == 0x01) {
-        //             g_requestZeroCalibration = true;
-        //         }
-        //     }
-        // }
         } else {
-        // >>> 总线故障中 <<<
-        // 可以选择在这里闪烁 LED 指示故障
-            vTaskDelay(pdMS_TO_TICKS(50)); // 故障时降低频率，给驱动恢复时间
+            // 总线故障中 - 降低频率，给驱动恢复时间
+            vTaskDelay(pdMS_TO_TICKS(50));
         }
 
-        // Serial.println("\n======= [发送任务执行中] =======");
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
-// --- [新增] 系统管理任务函数 ---
-// 负责处理低频、耗时、全局性的操作（如校准、保存配置等）
-// --- [修正后] 系统管理任务函数 ---
-void Task_SysMgr(void *pvParameters) {
-    // 【修改 1】删除/注释掉这行。
-    // 不要监控一个会长期睡眠的任务，否则只要不发命令，看门狗就会重启系统。
-    // esp_task_wdt_add(NULL); 
 
+/**
+ * 系统管理任务
+ * 负责处理低频、耗时、全局性的操作（如校准、保存配置等）
+ */
+void Task_SysMgr(void *pvParameters) {
     Serial.println("[SysMgr] Manager Task Started (Waiting for CMD)...");
 
     for (;;) {
@@ -191,68 +187,80 @@ void Task_SysMgr(void *pvParameters) {
 
         Serial.println("[SysMgr] Calibration Sequence Started...");
 
-        // ---------------------------------------------------
-        // [关键逻辑调整] 防止 SPI 死锁
-        // ---------------------------------------------------
-        
         // 1. 先获取数据 (此时 xEncTask 还在运行，确保 SPI 锁能正常获取和释放)
-        // 假设 getData 内部有 SPI 操作，必须在任务运行态下调用
         EncoderData currentData = encoders.getData(); 
         
-        // 2. 数据拿到后，再挂起任务 (为了安全的 Flash 写入)
-        if (xEncTask) vTaskSuspend(xEncTask);
-        if (xTacTask) vTaskSuspend(xTacTask);
-        if (xCanTask) vTaskSuspend(xCanTask); 
+        // 2. 数据拿到后，再挂起任务 (为了安全的操作)
+        if (xEncTask) {
+            vTaskSuspend(xEncTask);
+        }
+        if (xTacTask) {
+            vTaskSuspend(xTacTask);
+        }
+        if (xCanTask) {
+            vTaskSuspend(xCanTask);
+        }
         
-        // 3. 喂系统级看门狗 (如果开启了 IDLE 监控，这一步其实主要是为了防止 Flash 操作过长)
+        // 3. 喂系统级看门狗
         esp_task_wdt_reset();
 
-        
-        // 5. 再次喂狗
+        // 4. 再次喂狗
         esp_task_wdt_reset();
 
-        // 6. 恢复任务
-        if (xCanTask) vTaskResume(xCanTask);
-        if (xTacTask) vTaskResume(xTacTask);
-        if (xEncTask) vTaskResume(xEncTask);
+        // 5. 恢复任务
+        if (xCanTask) {
+            vTaskResume(xCanTask);
+        }
+        if (xTacTask) {
+            vTaskResume(xTacTask);
+        }
+        if (xEncTask) {
+            vTaskResume(xEncTask);
+        }
         
         Serial.println("[SysMgr] Calibration Done & Saved.");
 
-        // ---------------------------------------------------
-
-        // 7. 发送 CAN 反馈
+        // 6. 发送 CAN 反馈
         vTaskDelay(pdMS_TO_TICKS(50)); // 给 CAN 任务一点恢复时间
         twaiBus.sendCalibrationAck(true);
     }
 }
 
-// 启动任务
+/**
+ * 启动系统任务
+ * 负责创建队列和所有任务
+ */
 void startSystemTasks() {
-
-        // 【关键】先创建队列！
+    // 1. 创建队列
     xQueueEncoderData = xQueueCreate(1, sizeof(EncoderData));
     if (xQueueEncoderData == NULL) {
         Serial.println("[FATAL] Queue creation failed!");
-        while(1) vTaskDelay(1000);
+        while(1) {
+            vTaskDelay(1000);
+        }
     }
-    // 编码器任务 - Core 1, 高优先级
+    
+    Serial.println("[SystemTasks] Queue created successfully!");
+    
+    // 2. 创建编码器任务 - Core 1, 高优先级
     xTaskCreatePinnedToCore(
         Task_Encoders, "EncTask", 4096, NULL, 10, &xEncTask, 1
     );
 
-    // 触觉任务 - Core 0, 中优先级, 大栈
+    // 3. 创建触觉任务 - Core 0, 中优先级
     xTaskCreatePinnedToCore(
         Task_Tactile, "TacTask", 8192, NULL, 5, &xTacTask, 0
     );
 
-    // CAN 任务 - Core 1, 中优先级
+    // 4. 创建 CAN 任务 - Core 0, 中优先级
     xTaskCreatePinnedToCore(
         Task_CanBus, "CanTask", 4096, NULL, 5, &xCanTask, 0
     );
 
-    // [新增] 创建系统管理任务
-    // 优先级设为 1 (低)，堆栈给多一点 (6144) 因为 NVS 操作耗栈
+    // 5. 创建系统管理任务 - Core 1, 低优先级
     xTaskCreatePinnedToCore(
-        Task_SysMgr,   "SysMgr",   6144,  NULL,  1,  &xSysMgrTask, 1 
+        Task_SysMgr, "SysMgr", 6144, NULL, 1, &xSysMgrTask, 1 
     );
+    
+    Serial.println("[SystemTasks] All tasks created successfully!");
 }

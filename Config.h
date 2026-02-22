@@ -6,22 +6,17 @@
 #include <driver/spi_master.h>
 #include "driver/twai.h" // 确保包含 TWAI 定义
 
-
 // ===========================================
-// [System] 数据结构定义
+// [System] 系统配置参数
 // ===========================================
 #define ENCODER_TOTAL_NUM 21
 #define TACTILE_GROUP_NUM 5
 
-// ------------------- [新增/修改部分 Start] -------------------
 // [NEW] 用于存放 DIAAGC 寄存器的值 (包含 MAGH/MAGL 和 AGC 增益)
 extern uint16_t g_enc_diag[ENCODER_TOTAL_NUM];
-// ------------------- [新增/修改部分 End] -------------------
-
-
 
 // ===========================================
-// [AS5047P] 错误码定义 (新增)
+// [AS5047P] 错误码定义
 // ===========================================
 #define AS5047P_ERR_FRERR    0x0001  // 帧错误
 #define AS5047P_ERR_INVCOMM  0x0002  // 无效命令
@@ -33,22 +28,27 @@ extern uint16_t g_enc_diag[ENCODER_TOTAL_NUM];
 #define ERR_CODE_DIAG_BASE   0x2000  // 诊断错误基址
 
 // ===========================================
-// [System] 状态机定义 (新增)
+// [System] 状态机定义
 // ===========================================
 enum EncoderFSMState {
     FSM_READ_ANGLE = 0,
     FSM_READ_ERRFL = 1,
     FSM_READ_DIAAGC = 2
 };
+
 // ===========================================
-// [System] 数据结构定义 (扩展)
+// [System] 数据结构定义
 // ===========================================
+
+// 编码器数据结构
 struct EncoderData {
     uint16_t rawAngles[ENCODER_TOTAL_NUM];
     uint16_t finalAngles[ENCODER_TOTAL_NUM];
     uint16_t errorFlags[ENCODER_TOTAL_NUM];      // 0=正常, 1=错误
     uint16_t latchedErrors[ENCODER_TOTAL_NUM];   // 详细错误码
 };
+
+// 检查数据结构
 struct CheckData {
     uint16_t rawData[ENCODER_TOTAL_NUM]; 
     uint16_t rawAngles[ENCODER_TOTAL_NUM];
@@ -57,8 +57,7 @@ struct CheckData {
     uint16_t connectionStatus[ENCODER_TOTAL_NUM]; // 0: OK, 0xFFFF: Lost
 };
 
-
-// --- 触觉传感器数据结构 (根据你的描述修改) ---
+// 触觉传感器数据结构
 
 // 1610 型号: 25点 * 3轴 + 3合力 = 75 + 3 = 78 Bytes
 struct TacIndent1610 {
@@ -84,7 +83,7 @@ struct TactileData {
     TacGroup groups[TACTILE_GROUP_NUM];
 };
 
-// --- 远程指令结构 ---
+// 远程指令结构
 struct RemoteCommand {
     uint8_t cmd_type;
     float   value;
@@ -92,19 +91,14 @@ struct RemoteCommand {
 };
 
 // ===========================================
-// [Hardware] 引脚定义 (ESP32-S3)
+// [Hardware] 硬件引脚定义 (ESP32-S3)
 // ===========================================
+
 // --- HSPI: 编码器 (AS5047P) ---
-// 请根据您的电路图核对 GPIO
 #define PIN_ENC_MISO    47
 #define PIN_ENC_MOSI    38
 #define PIN_ENC_SCLK    48
 #define PIN_ENC_CS      7   // 公共片选
-
-// MUX (74HC151) 用于切换 5 组传感器
-#define PIN_MUX_A       2
-#define PIN_MUX_B       4
-#define PIN_MUX_C       5
 
 // --- VSPI: 触觉传感器 ---
 #define PIN_TAC_MISO    13
@@ -114,19 +108,15 @@ struct RemoteCommand {
 #define PIN_TAC_CS_B    6
 //#define PIN_TAC_CS_C    8  //引脚c被电阻一直上拉
 
-
-// [Hardware] 引脚定义
-// ===========================================
-// TWAI (CAN)
+// --- TWAI (CAN) ---
 #define PIN_TWAI_TX     9 
 #define PIN_TWAI_RX     8
 #define CAN_BAUD_RATE   TWAI_TIMING_CONFIG_1MBITS()
 
-// MUX 控制引脚 (假设用于切换 5 组触觉)
+// --- MUX 控制引脚 (用于切换 5 组传感器) ---
 #define PIN_MUX_A       2
 #define PIN_MUX_B       4
 #define PIN_MUX_C       5
-
 
 // ===========================================
 // [Parameter] 任务与通信参数
