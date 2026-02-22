@@ -1,11 +1,10 @@
 #pragma once
-#include "Config.h"
+#include "../config/Config.h"
 
 // 【新增】错误状态帧ID
 // ==========================================
 // 【修改】CAN ID 定义 - 与 HalTWAI 发送端一致
 // ==========================================
-#define ENCODER_TOTAL_NUM 21
 #define CAN_ID_ENC_BASE   0x100  // 【修改】从 0x200 改为 0x100
 #define CAN_ID_ENC_LAST   (CAN_ID_ENC_BASE + (ENCODER_TOTAL_NUM + 3) / 4 - 1) // 0x105
 #define CAN_ID_ERROR_STATUS 0x1F0

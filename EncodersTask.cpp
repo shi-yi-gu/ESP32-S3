@@ -1,6 +1,6 @@
-#include "EncodersTask.h"
-#include "Config.h"
-#include "HalEncoders.h"
+#include "tasks/EncodersTask.h"
+#include "config/Config.h"
+#include "hal/HalEncoders.h"
 
 // 任务句柄
 TaskHandle_t xEncTask = NULL;

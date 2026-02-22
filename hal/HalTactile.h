@@ -1,5 +1,5 @@
 #pragma once
-#include "Config.h"
+#include "../config/Config.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 

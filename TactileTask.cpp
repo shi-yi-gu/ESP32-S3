@@ -1,6 +1,6 @@
-#include "TactileTask.h"
-#include "Config.h"
-#include "HalTactile.h"
+#include "tasks/TactileTask.h"
+#include "config/Config.h"
+#include "hal/HalTactile.h"
 
 // 任务句柄
 TaskHandle_t xTacTask = NULL;

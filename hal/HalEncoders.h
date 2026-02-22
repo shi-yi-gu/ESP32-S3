@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include "driver/spi_master.h"
-#include "Config.h" 
+#include "../config/Config.h" 
 
 
 
