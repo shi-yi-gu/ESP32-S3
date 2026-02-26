@@ -1,4 +1,4 @@
-#include "hal/HalEncoders.h"
+#include "HalEncoders.h"
 #include <cstring>
 
 HalEncoders &encoders = HalEncoders::getInstance();

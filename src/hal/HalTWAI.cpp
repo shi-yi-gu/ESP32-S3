@@ -1,5 +1,5 @@
 
-#include "hal/HalTWAI.h"
+#include "HalTWAI.h"
 #include <cstring>
 
 // 全局实例

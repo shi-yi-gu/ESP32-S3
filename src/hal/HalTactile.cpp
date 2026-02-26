@@ -1,4 +1,4 @@
-#include "hal/HalTactile.h"
+#include "HalTactile.h"
 #include <cstring>
 
 // 全局实例

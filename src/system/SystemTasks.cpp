@@ -1,10 +1,10 @@
-#include "system/SystemTasks.h"
-#include "config/Config.h"
+#include "SystemTasks.h"
+#include "../config/Config.h"
 // 包含所有任务的头文件
-#include "tasks/EncodersTask.h"
-#include "tasks/TactileTask.h"
-#include "tasks/CanTask.h"
-#include "tasks/SysMgrTask.h"
+#include "../tasks/EncodersTask.h"
+#include "../tasks/TactileTask.h"
+#include "../tasks/CanTask.h"
+#include "../tasks/SysMgrTask.h"
 
 // 队列定义
 QueueHandle_t xQueueEncoderData = NULL;

@@ -1,9 +1,9 @@
 #include <Arduino.h>
-#include "config/Config.h"
-#include "hal/HalEncoders.h"
-#include "hal/HalTactile.h"
-#include "hal/HalTWAI.h"
-#include "system/SystemTasks.h"
+#include "src/config/Config.h"
+#include "src/hal/HalEncoders.h"
+#include "src/hal/HalTactile.h"
+#include "src/hal/HalTWAI.h"
+#include "src/system/SystemTasks.h"
 #include "esp_task_wdt.h"
 #include "esp_log.h" // 引入日志头文件
 

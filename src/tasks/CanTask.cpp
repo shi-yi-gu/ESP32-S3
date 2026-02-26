@@ -1,6 +1,6 @@
-#include "tasks/CanTask.h"
-#include "config/Config.h"
-#include "hal/HalTWAI.h"
+#include "CanTask.h"
+#include "../config/Config.h"
+#include "../hal/HalTWAI.h"
 
 // 任务句柄
 TaskHandle_t xCanTask = NULL;

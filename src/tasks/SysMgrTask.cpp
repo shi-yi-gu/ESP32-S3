@@ -1,7 +1,7 @@
-#include "tasks/SysMgrTask.h"
-#include "config/Config.h"
-#include "hal/HalEncoders.h"
-#include "hal/HalTWAI.h"
+#include "SysMgrTask.h"
+#include "../config/Config.h"
+#include "../hal/HalEncoders.h"
+#include "../hal/HalTWAI.h"
 #include "esp_task_wdt.h"
 
 // 任务句柄
