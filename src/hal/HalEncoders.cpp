@@ -80,17 +80,17 @@ uint8_t HalEncoders::remapGroupIndex(uint8_t groupCount, uint8_t transferIndex) 
 
     if (groupCount == 4)
     {
-        // Rule for 4 encoders: swap 3<->4, then swap 1<->4 and 2<->3.
-        // old->new (0-based): [3,2,0,1]
-        static constexpr uint8_t kOldToNew[4] = {3, 2, 0, 1};
+        // Rule for 4 encoders: swap 3<->4, 
+        // old->new (0-based): [0,1,3,2]
+        static constexpr uint8_t kOldToNew[4] = {0, 1, 3, 2};
         return kOldToNew[originalIndex];
     }
 
     if (groupCount == 5)
     {
-        // Rule for 5 encoders: swap 4<->5, then swap 1<->5 and 2<->4.
+        // Rule for 5 encoders: swap 4<->5, 
         // old->new (0-based): [4,3,2,0,1]
-        static constexpr uint8_t kOldToNew[5] = {4, 3, 2, 0, 1};
+        static constexpr uint8_t kOldToNew[5] = {0, 1, 2, 4, 3};
         return kOldToNew[originalIndex];
     }
 
