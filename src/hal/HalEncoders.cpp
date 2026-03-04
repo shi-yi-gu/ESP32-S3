@@ -73,6 +73,35 @@ uint16_t HalEncoders::build_command_frame(uint16_t addr, bool is_read)
     return addr;
 }
 
+uint8_t HalEncoders::remapGroupIndex(uint8_t groupCount, uint8_t transferIndex) const
+{
+    // Base SPI order is reversed: transferIndex=0 maps to the last encoder in a group.
+    uint8_t originalIndex = groupCount - 1 - transferIndex;
+
+    if (groupCount == 4)
+    {
+        // Rule for 4 encoders: swap 3<->4, then swap 1<->4 and 2<->3.
+        // old->new (0-based): [3,2,0,1]
+        static constexpr uint8_t kOldToNew[4] = {3, 2, 0, 1};
+        return kOldToNew[originalIndex];
+    }
+
+    if (groupCount == 5)
+    {
+        // Rule for 5 encoders: swap 4<->5, then swap 1<->5 and 2<->4.
+        // old->new (0-based): [4,3,2,0,1]
+        static constexpr uint8_t kOldToNew[5] = {4, 3, 2, 0, 1};
+        return kOldToNew[originalIndex];
+    }
+
+    return originalIndex;
+}
+
+int HalEncoders::mapGlobalEncoderIndex(int groupStart, uint8_t groupCount, uint8_t transferIndex) const
+{
+    return groupStart + remapGroupIndex(groupCount, transferIndex);
+}
+
 const char *HalEncoders::getErrorString(uint16_t errorCode)
 {
     if (errorCode == ERR_CODE_NONE)
@@ -114,12 +143,12 @@ void HalEncoders::getData(EncoderData &outData)
 
     for (int grp = 0; grp < 5; grp++)
     {
-        int count = group_sizes_[grp];
+        uint8_t count = group_sizes_[grp];
 
         // 1. 构建指令
-        for (int k = 0; k < count; k++)
+        for (uint8_t k = 0; k < count; k++)
         {
-            int id = global_idx + (count - 1 - k);
+            int id = mapGlobalEncoderIndex(global_idx, count, k);
             if (id >= ENCODER_TOTAL_NUM)
                 id = ENCODER_TOTAL_NUM - 1;
 
@@ -155,9 +184,9 @@ void HalEncoders::getData(EncoderData &outData)
         delayMicroseconds(2);
 
         // 3. 解析响应
-        for (int k = 0; k < count; k++)
+        for (uint8_t k = 0; k < count; k++)
         {
-            int id = global_idx + (count - 1 - k);
+            int id = mapGlobalEncoderIndex(global_idx, count, k);
             if (id >= ENCODER_TOTAL_NUM)
                 continue;
 

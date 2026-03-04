@@ -102,7 +102,7 @@ void loop() {
     static uint32_t lastPrintTime = 0;
     if (millis() - lastPrintTime > 500) {
         lastPrintTime = millis();
-        // printSystemMonitor();
+        printSystemMonitor();
     }
 
     // 3. 让出 CPU 给低优先级任务 (Idle Task 需要运行以喂看门狗)

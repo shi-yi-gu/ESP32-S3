@@ -52,6 +52,8 @@ private:
     void setMux(uint8_t channel);
     uint8_t get_parity(uint16_t n);
     uint16_t build_command_frame(uint16_t address, bool is_read);
+    uint8_t remapGroupIndex(uint8_t groupCount, uint8_t transferIndex) const;
+    int mapGlobalEncoderIndex(int groupStart, uint8_t groupCount, uint8_t transferIndex) const;
 };
 
 extern HalEncoders& encoders;
