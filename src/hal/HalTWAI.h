@@ -7,7 +7,8 @@
 // ==========================================
 #define CAN_ID_ENC_BASE   0x100  // 【修改】从 0x200 改为 0x100
 #define CAN_ID_ENC_LAST   (CAN_ID_ENC_BASE + (ENCODER_TOTAL_NUM + 3) / 4 - 1) // 0x105
-#define CAN_ID_ERROR_STATUS 0x1F0
+#define CAN_ID_ERROR_DETAIL_BASE 0x1F0
+#define CAN_ID_ERROR_DETAIL_LAST (CAN_ID_ERROR_DETAIL_BASE + (ENCODER_TOTAL_NUM + 6) / 7 - 1) // 0x1F2
 
 class HalTWAI {
 public:
@@ -39,6 +40,7 @@ public:
 
 private:
     void sendFrame(uint32_t id, const uint8_t* data, uint8_t len);
+    static uint8_t encodeFaultCode(uint16_t rawLatchedError, uint16_t errorFlag);
     bool _is_initialized;
 };
 
