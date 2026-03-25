@@ -130,7 +130,7 @@ const char *HalEncoders::getErrorString(uint16_t errorCode)
 
 EncoderData HalEncoders::getData()
 {
-    EncoderData d;
+    EncoderData d{};
     getData(d);
     return d;
 }
@@ -140,6 +140,7 @@ void HalEncoders::getData(EncoderData &outData)
     spi_transaction_t t;
     uint16_t tx_buf[8], rx_buf[8], pending_cmds[8];
     int global_idx = 0;
+    outData = {};
 
     for (int grp = 0; grp < 5; grp++)
     {
@@ -210,6 +211,9 @@ void HalEncoders::getData(EncoderData &outData)
             // 奇偶校验
             if (get_parity(raw_val & 0x7FFF) != ((raw_val >> 15) & 0x01))
             {
+                outData.errorFlags[id] = 1;
+                _latchedErrorCodes[id] = ERR_CODE_ERRFL_BASE | AS5047P_ERR_PARERR;
+                _fsmStates[id] = FSM_READ_ERRFL;
                 continue;
             }
 

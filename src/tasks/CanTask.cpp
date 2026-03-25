@@ -18,7 +18,7 @@ extern TaskHandle_t xSysMgrTask;
 void Task_CanBus(void *pvParameters) {
     (void)pvParameters;
     
-    EncoderData txData;
+    EncoderData txData{};
     static uint8_t errorSendCounter = 0;
     
     TickType_t xLastWakeTime = xTaskGetTickCount();

@@ -20,7 +20,7 @@ void Task_Encoders(void* pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     
     // 本地数据缓冲
-    EncoderData localData;
+    EncoderData localData{};
 
     Serial.println("[Task_Encoders] Started!");
 
@@ -29,10 +29,7 @@ void Task_Encoders(void* pvParameters) {
         EncoderData rawData = encoders.getData();
         
         // 复制原始数据到本地结构
-        for (int i = 0; i < ENCODER_TOTAL_NUM; i++) {
-            localData.rawAngles[i] = rawData.rawAngles[i];
-            localData.errorFlags[i] = rawData.errorFlags[i];
-        }
+        localData = rawData;
 
         // 打印测试结果 (每100次循环打印一次)
         if ((g_testCounter % 100) == 1) {
