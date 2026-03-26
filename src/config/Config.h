@@ -115,7 +115,7 @@ struct RemoteCommand {
 #define ENC_HW_MODE_151_MISO_MUX 1
 
 #ifndef ENC_HW_MODE
-#define ENC_HW_MODE ENC_HW_MODE_138_CS_DEMUX
+#define ENC_HW_MODE ENC_HW_MODE_151_MISO_MUX
 #endif
 
 // 138 path currently uses channel = grp + 3
@@ -131,7 +131,7 @@ static constexpr uint8_t ENC_151_GROUP_CHANNEL_MAP[5] = {3, 4, 5, 6, 7};
 #define ENC_151_DIAG_MODE_FULL 1
 
 #ifndef ENC_151_DIAG_MODE
-#define ENC_151_DIAG_MODE ENC_151_DIAG_MODE_SAFE
+#define ENC_151_DIAG_MODE ENC_151_DIAG_MODE_FULL
 #endif
 
 // ===========================================
